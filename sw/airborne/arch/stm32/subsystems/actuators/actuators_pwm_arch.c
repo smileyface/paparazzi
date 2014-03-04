@@ -32,36 +32,10 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/timer.h>
 
-
-#if defined(STM32F1)
-//#define PCLK 72000000
-#define PCLK AHB_CLK
-#elif defined(STM32F4)
-//#define PCLK 84000000
-#define PCLK AHB_CLK/2
-#endif
+// for timer_get_frequency
+#include "mcu_arch.h"
 
 #define ONE_MHZ_CLK 1000000
-
-#ifdef STM32F1
-/**
- * HCLK = 72MHz, Timer clock also 72MHz since
- * TIM1_CLK = APB2 = 72MHz
- * TIM2_CLK = 2 * APB1 = 2 * 32MHz
- */
-#define TIMER_APB1_CLK AHB_CLK
-#define TIMER_APB2_CLK AHB_CLK
-#endif
-
-#ifdef STM32F4
-/* Since APB prescaler != 1 :
- * Timer clock frequency (before prescaling) is twice the frequency
- * of the APB domain to which the timer is connected.
- */
-#define TIMER_APB1_CLK (rcc_ppre1_frequency * 2)
-#define TIMER_APB2_CLK (rcc_ppre2_frequency * 2)
-#endif
-
 
 /** Default servo update rate in Hz */
 #ifndef SERVO_HZ
@@ -135,8 +109,12 @@ static inline void set_servo_gpio(uint32_t gpioport, uint16_t pin, uint8_t none 
 #endif
 
 /** Set Timer configuration
+ * @param[in] timer Timer register address base
+ * @param[in] period period in us
+ * @param[in] channels_mask output compare channels to enable
  */
 static inline void set_servo_timer(uint32_t timer, uint32_t period, uint8_t channels_mask) {
+  // WARNING, this reset is only implemented for TIM1-8 in libopencm3!!
   timer_reset(timer);
 
   /* Timer global mode:
@@ -151,13 +129,8 @@ static inline void set_servo_timer(uint32_t timer, uint32_t period, uint8_t chan
     timer_set_mode(timer, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
 
 
-  // TIM1, 8 and 9 use APB2 clock, all others APB1
-  if (timer != TIM1 && timer != TIM8 && timer != TIM9) {
-    timer_set_prescaler(timer, (TIMER_APB1_CLK / ONE_MHZ_CLK) - 1); // 1uS
-  } else {
-    // TIM9, 1 and 8 use APB2 clock
-    timer_set_prescaler(timer, (TIMER_APB2_CLK / ONE_MHZ_CLK) - 1);
-  }
+  uint32_t timer_clk = timer_get_frequency(timer);
+  timer_set_prescaler(timer, (timer_clk / ONE_MHZ_CLK) -1); // 1us
 
   timer_disable_preload(timer);
 

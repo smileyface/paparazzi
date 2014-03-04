@@ -151,12 +151,8 @@ PRINT_CONFIG_MSG("Analog to Digital Coverter 3 active")
 #warning ALL ADC CONVERTERS INACTIVE
 #endif
 
-#ifndef ADC_TIMER_PRESCALER
-#if defined(STM32F1)
-#define ADC_TIMER_PRESCALER 0x8
-#elif defined(STM32F4)
-#define ADC_TIMER_PRESCALER 0x53
-#endif
+#ifndef ADC_TIMER_FREQUENCY
+#define ADC_TIMER_FREQUENCY 35555555
 #endif
 
 /***************************************/
@@ -435,7 +431,8 @@ static inline void adc_init_rcc( void )
 #elif defined(STM32F4)
   timer_set_period(TIM_ADC, 0xFFFF);
 #endif
-  timer_set_prescaler(TIM_ADC, ADC_TIMER_PRESCALER);
+  uint32_t timer_clk = timer_get_frequency(TIM_ADC);
+  timer_set_prescaler(TIM_ADC, (timer_clk / ADC_TIMER_FREQUENCY) - 1);
   //timer_set_clock_division(TIM_ADC, 0x0);
   /* Generate TRGO on every update. */
   timer_set_master_mode(TIM_ADC, TIM_CR2_MMS_UPDATE);

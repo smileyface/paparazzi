@@ -37,14 +37,15 @@
 #define MAX_SPEKTRUM_FRAMES 2
 #define MAX_SPEKTRUM_CHANNELS 16
 
+#define ONE_MHZ 1000000
+
 #define MAX_DELAY   INT16_MAX
 /* the frequency of the delay timer */
-#define DELAY_TIM_FREQUENCY 1000000
+#define DELAY_TIM_FREQUENCY ONE_MHZ
 /* Number of low pulses sent to satellite receivers */
 #define MASTER_RECEIVER_PULSES 5
 #define SLAVE_RECEIVER_PULSES 6
 
-#define TIM_FREQ_1000000 1000000
 #define TIM_TICS_FOR_100us 100
 #define MIN_FRAME_SPACE  70  // 7ms
 #define MAX_BYTE_SPACE  3   // .3ms
@@ -493,7 +494,9 @@ void SpektrumTimerInit( void ) {
              TIM_CR1_CMS_EDGE, TIM_CR1_DIR_DOWN);
   /* 100 microseconds ie 0.1 millisecond */
   timer_set_period(TIM6, TIM_TICS_FOR_100us-1);
-  timer_set_prescaler(TIM6, ((AHB_CLK / TIM_FREQ_1000000) - 1));
+  uint32_t tim6_clk = timer_get_frequency(TIM6);
+  /* timer ticks with 1us */
+  timer_set_prescaler(TIM6, ((tim6_clk / ONE_MHZ) - 1));
 
   /* Enable TIM6 interrupts */
 #ifdef STM32F1
@@ -730,7 +733,8 @@ static void SpektrumDelayInit( void ) {
   /* Time base configuration */
   /* Mode does not need to be set as the default reset values are ok. */
   timer_set_period(TIM6, UINT16_MAX);
-  timer_set_prescaler(TIM6, (AHB_CLK / DELAY_TIM_FREQUENCY) - 1);
+  uint32_t tim6_clk = timer_get_frequency(TIM6);
+  timer_set_prescaler(TIM6, (tim6_clk / DELAY_TIM_FREQUENCY) - 1);
 
   /*
    * Let's start the timer late in the cycle to force an update event before
