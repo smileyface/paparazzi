@@ -122,7 +122,7 @@
     <define name="REF_MAX_Q"    value="300." unit="deg/s"/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(7000.)"/>
 
-    <define name="REF_OMEGA_R"  value="150" unit="deg/s"/>
+    <define name="REF_OMEGA_R"  value="250" unit="deg/s"/>
     <define name="REF_ZETA_R"   value="0.9"/>
     <define name="REF_MAX_R"    value="180." unit="deg/s"/>
     <define name="REF_MAX_RDOT" value="RadOfDeg(1800.)"/>
